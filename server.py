@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed May  1 22:45:10 2019
-
-@author: Kevin Racso
-"""
-
 ############################ Llamar a este archivo server.py ################################################
 # -*- coding: utf-8 -*- 
 
@@ -46,7 +39,7 @@ def enter_chat(client, address):
                     break
     else:
         name = client.recv(BUFFERSIZE).decode('UTF-8')
-        while not_unique_name(name): # chequear que el nombre no este ya en la lista
+        while check_name(name): # chequear que el nombre no este ya en la lista
             client.send(bytes('The name %s is already taken, try again' % name , 'UTF-8'))
         
             name = client.recv(BUFFERSIZE).decode('UTF-8')
@@ -66,11 +59,7 @@ def enter_chat(client, address):
             try: 
                 saldo_num = float(saldo)
                 
-                if saldo_num<0:
-                
-                    client.send(bytes('The balance you entered is not valid. Please enter your balance', 'UTF-8'))
-                
-                elif not saldo_num.is_integer():
+                if saldo_num<0 or not saldo_num.is_integer():
                 
                     client.send(bytes('The balance you entered is not valid. Please enter your balance', 'UTF-8'))
                 
@@ -83,8 +72,8 @@ def enter_chat(client, address):
     
 
         #saldo = client.recv(BUFFERSIZE).decode('UTF-8') # K: Definir saldo
-        #print(saldo)
-        BALANCES[client] = int(saldo)
+        saldo = int(saldo)
+        BALANCES[client] = saldo
         client.send(bytes('The balance of %s has been set to your account' % saldo, 'UTF-8'))
         # informar a todos que llego un nuevo usuario
         broadcast(bytes("User <%s> has graced this chat with their presence" % name,'UTF-8'),client)
@@ -93,6 +82,8 @@ def enter_chat(client, address):
         while True:
             messages = client.recv(BUFFERSIZE)
             msgstring = str(messages, 'UTF-8') 
+            BALANCES[client] = saldo # reinicializae el saldo en cada iteracion
+            
             if messages == bytes(":q", 'UTF-8'):
                 
                 client.send(bytes(":q", 'UTF-8'))
@@ -102,46 +93,69 @@ def enter_chat(client, address):
                 CONNECTIONS.pop(client)
                 ADDRESSES.pop(client)
                 NAMES.pop(client)
+                BALANCES.pop(client)
                 break
             
             elif messages == bytes(":funds", 'UTF-8'):   
                 client.send(bytes("You have %s dollars" % saldo, 'UTF-8'))
                 
             
-            #elif bytes(":t", 'UTF-8') in messages:
-            elif msgstring.startswith(":t"):  
-                client.send(bytes("you've done it", 'UTF-8'))
-            
+            elif msgstring.startswith(":t"):#transferencia
+                
+                client.send(bytes("Me: ",'UTF-8') + messages)
+                ident_start = msgstring.find('<') + 1 #buscar inicio del identificador
+                ident_end = msgstring.find('>') #buscar final del identificador
+                if ident_start < -1 or ident_end <= ident_start: # si no se encontro '<' o si '>' esta antes
+                    client.send(bytes('The transference you requested is not valid', 'UTF-8'))
+                else:
+                    identifier = msgstring[ident_start:ident_end] # identificación del usuario al que se quiere transferir
+                    
+                    if not check_name(identifier):
+                        client.send(bytes('The user: %s is not on the chat' %identifier, 'UTF-8'))
+                    else:
+                        amount_start = msgstring.find('-',ident_end)+2 # indice inicial del monto
+                    
+                        if amount_start < 1: # si el indice encontrad es menor a (-1 +2) 
+                            client.send(bytes('The transference you requested is not valid', 'UTF-8'))
+                        else: 
+                            string_amount = msgstring[amount_start:] # string de monto a transferir
+                            #transfer(client, name, string_amount, identifier)
+                            try: 
+                                amount = int(string_amount)
+                                
+                                if saldo < amount:
+                                    client.send(bytes('You do not have enough money for the transaction', 'UTF-8'))
+                                else:    
+                                    mutex.acquire()
+                                    target = names_client(identifier)
+                                    saldo_ident = BALANCES[target]
+                                    saldo_ident += amount
+                                    BALANCES[target] = saldo_ident
+                                    target.send(bytes('%s has transferred you ' %name + string_amount, 'UTF-8'))
+                                    saldo -= amount
+                                    client.send(bytes('You have succesfully transferred %s to ' %amount + identifier, 'UTF-8'))
+                                    mutex.release()
+                                    
+                            except ValueError:
+                                client.send(bytes('The balance  is not valid for transfering', 'UTF-8'))
+
+                                                
             #elif msgstring.startswith(":p"):
                 #target = ...
                 
-            elif msgstring.startswith(":p - <"):       
-                l = len(msgstring)
-                ind = 0
+            #elif msgstring.startswith(":p - <Identifier> - "):
                 
-                for i in range(6, l):
-                    if msgstring[(i-1):i] == '>':
-                        ind = i
-                        break
-                    else:
-                        pass
-                    
-                if ind ==0:
-                    client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
-                    
-                elif msgstring[6:(i-1)] in NAMES:
-                    client.send(bytes('Weena', 'UTF-8'))
-                     
-                else: 
-                    client.send(bytes('The nickname you entered is incorrect. Please try again.' + msgstring[6:(i-1)], 'UTF-8'))
-                    print(NAMES)
-                    
-
+            elif msgstring.startswith(":x"):
+                mutex.acquire()
+                target = names_client('a')
+                saldo_ident = BALANCES[target]
+                saldo_ident += 1000
+                BALANCES[target] = saldo_ident
+                client.send(bytes("%s" % saldo_ident,'UTF-8'))
+                mutex.release()
             
-                
-                
             else:
-                client.send(bytes("Me :",'UTF-8') + messages)
+                client.send(bytes("Me: ",'UTF-8') + messages)
                 broadcast(messages, client, "<%s> : " % name)   
                 
 
@@ -153,14 +167,41 @@ def broadcast(message, client, prefix=""):  # prefix is for name identification.
         if i != client:
             i.send(bytes(prefix, 'UTF-8')+message)
         
-def not_unique_name(name):
+def check_name(name):
     
     for i in NAMES:   
-        if NAMES[i] == name: # si nombre esta en la lista, retornar False
+        if NAMES[i] == name: # si nombre esta en la lista, retornar True
             
             return True
         
-    return False # si no esta, retornar True
+    return False # si no esta, retornar False
+
+#def transfer(client, name, string_amount, identifier):
+#    try: 
+#        amount = int(string_amount)
+#        saldo = BALANCES[client]
+#        if saldo < amount:
+#            client.send(bytes('You do not have enough money for the transaction', 'UTF-8'))
+#        else:    
+#            target = name_index(identifier)
+#            saldo_ident = BALANCES[target]
+#            saldo_ident += amount
+#            target.send(bytes('%s has transferred you ' %name + string_amount, 'UTF-8'))
+#            saldo -= amount
+#            client.send(bytes('You have succesfully transferred %s to ' %amount + identifier, 'UTF-8'))
+
+#    except ValueError:
+#        client.send(bytes('The balance  is not valid for transfering', 'UTF-8'))
+        
+def names_client(identifier):
+    
+    for client in NAMES:   
+        if NAMES[client] == identifier: # retorna el cliente que tiene el identificador
+            
+            return client
+        
+    return -1 # si no esta, retornar -1
+        
 
 mutex = Lock()
 
