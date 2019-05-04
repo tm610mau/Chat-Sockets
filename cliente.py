@@ -38,8 +38,10 @@ def receive():
             msg = client_socket.recv(BUFSIZ).decode('UTF-8')
             if msg == ":q": #terminar la sesion si el cliente recibe un :q del servidor
                 client_socket.close()
+                #print("You have left the quantum chat")
+                top.quit()
                 print("You have left the quantum chat")
-                top.destroy()
+                #top.destroy()
             else:
                 msg_list.insert(tkinter.END, msg)
         except OSError:  # Possibly client has left the chat.

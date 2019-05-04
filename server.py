@@ -115,7 +115,7 @@ def enter_chat(client, address):
             #elif msgstring.startswith(":p"):
                 #target = ...
                 
-            elif msgstring.startswith(":p - <Identifier> - "):
+            #elif msgstring.startswith(":p - <Identifier> - "):
                 
                 
                 
