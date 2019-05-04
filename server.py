@@ -115,8 +115,29 @@ def enter_chat(client, address):
             #elif msgstring.startswith(":p"):
                 #target = ...
                 
-            #elif msgstring.startswith(":p - <Identifier> - "):
+            elif msgstring.startswith(":p - <"):       
+                l = len(msgstring)
+                ind = 0
                 
+                for i in range(6, l):
+                    if msgstring[(i-1):i] == '>':
+                        ind = i
+                        break
+                    else:
+                        pass
+                    
+                if ind ==0:
+                    client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
+                    
+                elif msgstring[6:(i-1)] in NAMES:
+                    client.send(bytes('Weena', 'UTF-8'))
+                     
+                else: 
+                    client.send(bytes('The nickname you entered is incorrect. Please try again.' + msgstring[6:(i-1)], 'UTF-8'))
+                    print(NAMES)
+                    
+
+            
                 
                 
             else:
