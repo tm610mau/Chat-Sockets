@@ -92,17 +92,3 @@ top.protocol("WM_DELETE_WINDOW", on_closing)
 receive_thread = Thread(target=receive)
 receive_thread.start()
 tkinter.mainloop() # Starts GUI execution.
-
-#entry_field = tkinter.Entry(top, textvariable=my_msg)
-#entry_field.bind("<Return>", send)
-#entry_field.pack()
-#send_button = tkinter.Button(top, text="Talk like a normal human being", command=send)
-#send_button.pack()
-#
-#top.protocol("WM_DELETE_WINDOW", on_closing)
-#
-#
-#
-#receive_thread = Thread(target=receive)
-#receive_thread.start()
-#tkinter.mainloop() # Starts GUI execution.
