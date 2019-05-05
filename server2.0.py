@@ -83,28 +83,28 @@ def enter_chat(client, address):
                 
                 client.send(bytes("You have %s dollars" % saldo, 'UTF-8')) #mostrar saldo al usuario
                 
-            elif msgstring.startswith(":p - <"):       
+            elif msgstring.startswith(":p - <"): # enviar mensajes privados
                 l = len(msgstring)
                 ind = 0
                 
                 for i in range(6, l):
-                    if msgstring[i:i+1] == '>':
+                    if msgstring[i:i+1] == '>': # revisar formato
                         ind = i
                         break
                     else:
                         pass
                     
-                if ind == 0:
+                if ind == 0: # formato incorrecto
                     client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
                     
-                elif names_client(msgstring[6:ind]) == -1:
+                elif names_client(msgstring[6:ind]) == -1: # destinatario no existe
                     #client.send(bytes('Weena', 'UTF-8'))
                     client.send(bytes('The nickname you entered is incorrect. Please try again.', 'UTF-8'))
                      
-                elif msgstring[ind+1:ind+4] != ' - ':
+                elif msgstring[ind+1:ind+4] != ' - ': # formato incorrecto
                     client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
                 
-                else: 
+                else: # enviar mensaje privado a destinatario
                     dest = names_client(msgstring[6:ind])
                     #dest_name = NAMES[dest]
                     pmsg = msgstring[ind+4:]
@@ -123,12 +123,16 @@ def enter_chat(client, address):
                 if check:
                     try: 
                         int(string_amount) # probar que el amonto sea un entero
-        
-                        transfer(client, name, string_amount, identifier) #realizar transferencia
-                    
+                        
+                        if int(string_amount)>0:
+                            transfer(client, name, string_amount, identifier) #realizar transferencia
+                       
+                        else:
+                            client.send(bytes('The amount is not a valid number for transfering', 'UTF-8'))
+                            
                     except ValueError:
                         
-                        client.send(bytes('The balance is not a valid number for transfering', 'UTF-8'))
+                        client.send(bytes('The amount is not a valid number for transfering', 'UTF-8'))
 
             elif msgstring.startswith(":t"): # una solicidud de transferencia incompleta
                 client.send(bytes('''The transference does not have the format ":t - <name> - message". Please try again.''', 'UTF-8'))
@@ -164,8 +168,7 @@ def ask_saldo(client):
                 
             if saldo_num<0 or not saldo_num.is_integer():
                 
-                client.send(bytes('''The balance you entered is not valid, 
-                                  it must be a positive Integer. Please try again''', 'UTF-8'))
+                client.send(bytes('''The balance you entered is not valid, it must be a positive Integer. Please try again''', 'UTF-8'))
                 
             else:
                 break
@@ -187,8 +190,7 @@ def check_transfer(msgstring, client):
     ident_end = msgstring.find('>',ident_start ) #buscar final del identificador
                 
     if ident_start < -1 or ident_end <= ident_start: # si no se encontro '<' o si '>' esta antes de '<'
-        client.send(bytes('''The transference does not have the format ":t - <name> - message". 
-                          Please try again.''', 'UTF-8'))
+        client.send(bytes('''The transference does not have the format ":t - <name> - amount". Please try again.''', 'UTF-8'))
                 
     else:
         identifier = msgstring[ident_start:ident_end] # identificación del usuario al que se quiere transferir
