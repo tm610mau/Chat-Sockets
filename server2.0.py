@@ -101,6 +101,9 @@ def enter_chat(client, address):
                     #client.send(bytes('Weena', 'UTF-8'))
                     client.send(bytes('The nickname you entered is incorrect. Please try again.', 'UTF-8'))
                      
+                elif msgstring[ind+1:ind+4] != ' - ':
+                    client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
+                
                 else: 
                     dest = names_client(msgstring[6:ind])
                     #dest_name = NAMES[dest]
