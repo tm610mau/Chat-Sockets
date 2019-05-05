@@ -75,6 +75,7 @@ scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messag
 # Following will contain the messages.
 msg_list = tkinter.Listbox(messages_frame, height=20, width=80, yscrollcommand=scrollbar.set)
 scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
+scrollbar.config(command=msg_list.yview)
 msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
 msg_list.pack()
 messages_frame.pack()
