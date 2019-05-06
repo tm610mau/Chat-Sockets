@@ -105,9 +105,13 @@ def enter_chat(client, address):
                     client.send(bytes('Your private message does not have the format ":p - <name> - message". Please try again.', 'UTF-8'))
                 
                 else: # enviar mensaje privado a destinatario
-                    dest = names_client(msgstring[6:ind])
+                    dest = names_client(msgstring[6:ind]) # direccion destinatario
                     #dest_name = NAMES[dest]
-                    pmsg = msgstring[ind+4:]
+                    pmsg = msgstring[ind+4:] # mensaje
+                    pmsg = pmsg.replace(':sad', ':(')
+                    pmsg = pmsg.replace(':smile', ':)')
+                    pmsg = pmsg.replace(':confused', ':S')
+                    pmsg = pmsg.replace(':angry', '>:(')
                     dest.send(bytes('<'+str(name)+'> (private): '+str(pmsg), 'UTF-8'))
                     #print(NAMES)
                     #dest = names_client(msgstring[6:(i-1)])
@@ -140,6 +144,9 @@ def enter_chat(client, address):
             else: 
                 # desplegar el mensaje a todos los demas
                 msgstring = msgstring.replace(':sad', ':(')
+                msgstring = msgstring.replace(':smile', ':)')
+                msgstring = msgstring.replace(':confused', ':S')
+                msgstring = msgstring.replace(':angry', '>:(')
                 messages = bytes(msgstring, 'UTF-8')
                 broadcast(messages, client, "<%s> : " % name)  
 

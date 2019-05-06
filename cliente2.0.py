@@ -72,12 +72,13 @@ my_msg = tkinter.StringVar()  # For the messages to be sent.
 #my_msg.set("Type your nickname here")
 my_msg.set("Type your message here")
 scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
+xbar = tkinter.Scrollbar(messages_frame, orient='horizontal')
 #xbar = tkinter.Scrollbar(messages_frame) # scrollbar horizontal
 # Following will contain the messages.
-msg_list = tkinter.Listbox(messages_frame, height=20, width=90, yscrollcommand=scrollbar.set) #, xscrollcommand=xbar.set)
+msg_list = tkinter.Listbox(messages_frame, height=20, width=80, yscrollcommand=scrollbar.set, xscrollcommand=xbar.set)
 scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
-#xbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-#xbar.config(command=msg_list.xview)
+xbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
+xbar.config(command=msg_list.xview)
 scrollbar.config(command=msg_list.yview)
 msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
 msg_list.pack()
