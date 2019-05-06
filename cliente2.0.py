@@ -1,99 +1,100 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Sun May  5 01:31:46 2019
-
-@author: Kevin Racso
-"""
-
 ############################ Llamar a este archivo cliente.py ################################################
 
 # -*- coding: utf-8 -*-
 
 #!/usr/bin/env python3
-"""Script for Tkinter GUI chat client."""
+
 from socket import AF_INET, socket, SOCK_STREAM
 from threading import Thread
 import tkinter
 
-#----Now comes the sockets part----
-#HOST = input('Enter host: ')
-HOST = '127.0.0.1'
-PORT = 33000
-#PORT = input('Enter port: ')
-#if not PORT:
-#    PORT = 33000
-#else:
-#    PORT = int(PORT)
 
-BUFSIZ = 1024
-ADDR = (HOST, PORT)
-
-client_socket = socket(AF_INET, SOCK_STREAM)
-client_socket.connect(ADDR)
-
-def receive():
-    """Handles receiving of messages."""
+def receive_message():
+# Recibir mensajes
     while True:
         try:
-            msg = client_socket.recv(BUFSIZ).decode('UTF-8')
-            if msg == ":q": #terminar la sesion si el cliente recibe un :q del servidor
-                client_socket.close()
-                #print("You have left the quantum chat")
-                top.quit()
+            message = client.recv(BUFFERSIZE).decode('UTF-8')
+            if message == "{good night}": # orden de termino de sesion
+                client_message.set("You have left the chat")
+                client.close()  # terminar sesion
+                root.quit() #salir del tkinter
                 print("You have left the quantum chat")
-                #top.destroy()
+            
+            elif message.startswith("Welcome"):
+                # pedirle al cliente que escriba su balance
+                client_message.set("Type your balance") 
+                chat.insert(tkinter.END, message) # mantener mensajes pasados
+                
+            elif message == 'The balance you entered is not valid, it must be a positive integer. Please try again':
+                # si se equivoca al poner el balance, poner un valor por default que sea valido
+                client_message.set("0") 
+                chat.insert(tkinter.END, message) # agregar a historial de mensajes
+            
             else:
-                msg_list.insert(tkinter.END, msg)
-        except OSError:  # Possibly client has left the chat.
+                chat.insert(tkinter.END, message) # agregar a historial de mensajes
+                
+        except OSError:  # A menos que el cliente ya haya dejado el chat
             break
 
-
-def send(event=None):  # event is passed by binders.
-    """Handles sending of messages."""
-    msg = my_msg.get()
-    my_msg.set("")  # Clears input field.
-    client_socket.send(bytes(msg, 'UTF-8'))
-#    if msg == ":q":
-#        client_socket.close()
-#        top.quit()
-#        print("You have left the quantum chat")
+def server_send(envio=None):
+# Enviar mensaje al servidor
+    message = client_message.get() #obtener mensaje del cliente
+    client_message.set("")  # poner el textbox en blanco
+    client.send(bytes(message, 'UTF-8')) # enviar al servidor
 
 
-def on_closing(event=None):
-    """This function is to be called when the window is closed."""
-    my_msg.set(":q")
-    send()
+def quit_chat():
+# Mandar mensaje de termino de sesion cuando se cierra la ventana
+    client_message.set(":You have left the quantum chat") # mostrar mensaje que se ha ido del chat
+    client_message.set(":q")
+    server_send() #al enviar :q, el server envia un :q de vuelta que cierra la sesion por completo
+    
+    
+HOST = input('Enter host: ') # Pedir al usuario que introduzca dirrecion IP del servidor
 
-top = tkinter.Tk()
-top.title("Quantum Chat")
+PORT = 25500 # Puerto del servidor
 
-messages_frame = tkinter.Frame(top)
-my_msg = tkinter.StringVar()  # For the messages to be sent.
-#my_msg.set("Type your nickname here")
-my_msg.set("Type your message here")
-scrollbar = tkinter.Scrollbar(messages_frame)  # To navigate through past messages.
-xbar = tkinter.Scrollbar(messages_frame, orient='horizontal')
-#xbar = tkinter.Scrollbar(messages_frame) # scrollbar horizontal
-# Following will contain the messages.
-msg_list = tkinter.Listbox(messages_frame, height=20, width=80, yscrollcommand=scrollbar.set, xscrollcommand=xbar.set)
+if not HOST:
+    HOST = '127.0.0.1' #por default, asumir que se esta conectando al mismo computador
+
+
+BUFFERSIZE = 1024 #numero de Bytes maximos
+ADDRESS = (HOST, PORT) #Tupla de host y puerto
+
+client = socket(AF_INET, SOCK_STREAM) # socket correspondiente al cliente
+client.connect(ADDRESS) # conectar el cliente al servidor
+
+root = tkinter.Tk() # comenzar el tkinter
+root.title("Quantum Chat") #titulo del tkinter
+
+messages_frame = tkinter.Frame(root) # marco de tkinter
+client_message = tkinter.StringVar()
+client_message.set("Type your Username") # pedirle al usuario que ponga su username
+
+# barra de dezplazamiento
+scrollbar = tkinter.Scrollbar(messages_frame)  # barra vertical
+xbar = tkinter.Scrollbar(messages_frame, orient='horizontal') # barra horizontal
+# configuraciones de las barras
+chat = tkinter.Listbox(messages_frame, height=20, width=80, yscrollcommand=scrollbar.set, xscrollcommand=xbar.set)
 scrollbar.pack(side=tkinter.RIGHT, fill=tkinter.Y)
 xbar.pack(side=tkinter.BOTTOM, fill=tkinter.X)
-xbar.config(command=msg_list.xview)
-scrollbar.config(command=msg_list.yview)
-msg_list.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
-msg_list.pack()
+xbar.config(command=chat.xview)
+scrollbar.config(command=chat.yview)
+chat.pack(side=tkinter.LEFT, fill=tkinter.BOTH)
+chat.pack()
 messages_frame.pack()
 
-entry_field = tkinter.Entry(top, textvariable=my_msg)
-entry_field.bind("<Return>", send)
-entry_field.pack()
-send_button = tkinter.Button(top, text="Talk like a normal human being", command=send)
-send_button.pack()
+#la entrada del usuario
+entry = tkinter.Entry(root, textvariable=client_message)
+entry.bind("<Return>", server_send)
+entry.pack()
 
-top.protocol("WM_DELETE_WINDOW", on_closing)
+# el boton
+button = tkinter.Button(root, text="Talk like a normal human being", command=server_send)
+button.pack()
 
+root.protocol("WM_DELETE_WINDOW", quit_chat) # protocolo de termino si se cierra la ventana de forma manual
 
-
-receive_thread = Thread(target=receive)
-receive_thread.start()
-tkinter.mainloop() # Starts GUI execution.
+receive_thread = Thread(target=receive_message) # tomar al cliente y darle bienvenida en un thread
+receive_thread.start() # comenzar el thread
+tkinter.mainloop() # loop del tkinter
