@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun May  5 01:31:24 2019
-
 @author: Kevin Racso
 """
 
@@ -82,6 +81,12 @@ def enter_chat(client, address):
             elif messages == bytes(":funds", 'UTF-8'):   # ver fondos
                 
                 client.send(bytes("You have %s dollars" % saldo, 'UTF-8')) #mostrar saldo al usuario
+            
+            elif messages == bytes(":u", 'UTF-8'):
+                
+                client.send(bytes("Currently active users:", 'UTF-8'))
+                
+                usernames_list(client) #entregar lista de usuarios
                 
             elif msgstring.startswith(":p - <"): # enviar mensajes privados
                 l = len(msgstring)
@@ -188,6 +193,12 @@ def ask_saldo(client):
             
     return saldo
 
+def usernames_list(client):
+    """Entregar lista de usuarios por linea""" 
+    
+    for i in NAMES:   
+        client.send(bytes('<' + NAMES[i] + '>', 'UTF-8')) #sumar el nombre de usuario a la lista
+        
 def check_transfer(msgstring, client):
     """Revisar la sintaxis del mensaje de transferencia"""
     
