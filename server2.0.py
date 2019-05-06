@@ -139,6 +139,8 @@ def enter_chat(client, address):
             
             else: 
                 # desplegar el mensaje a todos los demas
+                msgstring = msgstring.replace(':sad', ':(')
+                messages = bytes(msgstring, 'UTF-8')
                 broadcast(messages, client, "<%s> : " % name)  
 
 def broadcast(message, client, prefix=""):  # prefix is for name identification.
